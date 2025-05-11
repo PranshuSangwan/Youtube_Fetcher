@@ -1,4 +1,3 @@
-# app/services/youtube.py
 import os
 import requests
 from datetime import datetime, timedelta
@@ -44,7 +43,7 @@ class YouTubeService:
         try:
             response = requests.get(self.BASE_URL, params=params)
             response.raise_for_status()
-            with app.app_context():  # Add application context here
+            with app.app_context():  
                 return self._process_response(response.json())
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403 and "quotaExceeded" in e.response.text:

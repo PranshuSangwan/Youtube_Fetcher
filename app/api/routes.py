@@ -1,4 +1,3 @@
-# app/api/routes.py
 from flask import Blueprint, jsonify, request
 from app.models import Video
 from app import db
@@ -8,11 +7,11 @@ api_bp = Blueprint('api', __name__)
 
 @api_bp.route('/videos', methods=['GET'])
 def get_videos():
-    # Pagination parameters
+    
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     
-    # Limit per_page to a reasonable value
+    
     per_page = min(per_page, 100)
     
     # Sorting parameters
@@ -22,10 +21,8 @@ def get_videos():
     # Search parameter
     search_query = request.args.get('search', '')
     
-    # Build query
     query = Video.query
     
-    # Apply search filter if provided
     if search_query:
         search_term = f"%{search_query}%"
         query = query.filter(
@@ -34,7 +31,6 @@ def get_videos():
             (Video.channel_title.ilike(search_term))
         )
     
-    # Apply sorting
     if sort_field in ['title', 'published_at', 'channel_title']:
         sort_column = getattr(Video, sort_field)
         if sort_order == 'desc':
@@ -42,7 +38,6 @@ def get_videos():
         else:
             query = query.order_by(asc(sort_column))
     else:
-        # Default to published_at desc
         query = query.order_by(desc(Video.published_at))
     
     # Execute query with pagination
@@ -50,7 +45,6 @@ def get_videos():
         page=page, per_page=per_page, error_out=False
     )
     
-    # Format response
     response = {
         'videos': [video.to_dict() for video in videos.items],
         'pagination': {

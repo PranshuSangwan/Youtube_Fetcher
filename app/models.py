@@ -1,9 +1,8 @@
-# app/models.py
 from datetime import datetime
 from app import db
 
 class Video(db.Model):
-    id = db.Column(db.String(50), primary_key=True)  # YouTube video ID
+    id = db.Column(db.String(50), primary_key=True)  
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     published_at = db.Column(db.DateTime, nullable=False, index=True)  # Indexed for sorting

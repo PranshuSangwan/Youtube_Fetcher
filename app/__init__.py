@@ -1,13 +1,10 @@
-# app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import os
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///videos.db'  # Use SQLite for simplicity
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///videos.db'  # Use SQLite
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['YOUTUBE_API_KEYS'] = os.environ.get('YOUTUBE_API_KEYS', '').split(',')
 app.config['YOUTUBE_SEARCH_QUERY'] = os.environ.get('YOUTUBE_SEARCH_QUERY', 'cricket')
@@ -16,14 +13,11 @@ app.config['YOUTUBE_FETCH_INTERVAL'] = int(os.environ.get('YOUTUBE_FETCH_INTERVA
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
-# Import models
 from app.models import Video
 
-# Register routes
 from app.api.routes import api_bp
 app.register_blueprint(api_bp, url_prefix='/api')
 
-# Initialize background task
 from app.tasks.fetcher import VideoFetcher
 from app.routes import dashboard
 

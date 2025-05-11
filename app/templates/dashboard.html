@@ -93,14 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let sortBy = 'newest';
     let searchQuery = '';
     
-    // Get elements
+    
     const videoContainer = document.getElementById('video-container');
     const paginationContainer = document.getElementById('pagination');
     const searchInput = document.getElementById('search-input');
     const sortSelect = document.getElementById('sort-select');
     const perPageSelect = document.getElementById('per-page-select');
     
-    // Modal elements
+    
     const videoModal = document.getElementById('videoModal');
     const videoModalTitle = document.getElementById('videoModalTitle');
     const videoIframe = document.getElementById('videoIframe');
@@ -109,10 +109,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const videoDate = document.getElementById('videoDate');
     const videoYouTubeLink = document.getElementById('videoYouTubeLink');
     
-    // Initial load
+    
     loadVideos();
     
-    // Event listeners
+   
     searchInput.addEventListener('input', debounce(function() {
         searchQuery = this.value;
         currentPage = 1;
@@ -131,14 +131,13 @@ document.addEventListener('DOMContentLoaded', function() {
         loadVideos();
     });
     
-    // Functions
+    
     function loadVideos() {
         showLoading();
         
-        // Build the API URL with query parameters
+        
         let apiUrl = `/api/videos?page=${currentPage}&per_page=${perPage}`;
         
-        // Add sort parameter based on selection
         switch(sortBy) {
             case 'newest':
                 apiUrl += '&sort=published_at&order=desc';
@@ -154,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
         }
         
-        // Add search parameter if there's a query
+        
         if (searchQuery) {
             apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
         }
@@ -228,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         videoContainer.innerHTML = html;
         
-        // Add event listeners to view detail buttons
+        
         document.querySelectorAll('.view-details').forEach(button => {
             button.addEventListener('click', function() {
                 const videoId = this.getAttribute('data-video-id');
@@ -237,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const videoChannelName = this.getAttribute('data-video-channel');
                 const videoPublishedDate = this.getAttribute('data-video-date');
                 
-                // Set modal content
+                
                 videoModalTitle.textContent = videoTitle;
                 videoIframe.src = `https://www.youtube.com/embed/${videoId}`;
                 videoDescription.textContent = videoDesc;
@@ -245,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 videoDate.textContent = `Published: ${videoPublishedDate}`;
                 videoYouTubeLink.href = `https://www.youtube.com/watch?v=${videoId}`;
                 
-                // Show modal
+                
                 const modal = new bootstrap.Modal(videoModal);
                 modal.show();
             });
@@ -259,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         let html = '';
-        // Previous button
+        
         html += `
             <li class="page-item ${pagination.has_prev ? '' : 'disabled'}">
                 <a class="page-link" href="#" data-page="${pagination.current_page - 1}" aria-label="Previous">
@@ -268,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </li>
         `;
         
-        // Page numbers
+       
         const startPage = Math.max(1, pagination.current_page - 2);
         const endPage = Math.min(pagination.pages, pagination.current_page + 2);
         
@@ -294,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `<li class="page-item"><a class="page-link" href="#" data-page="${pagination.pages}">${pagination.pages}</a></li>`;
         }
         
-        // Next button
+        
         html += `
             <li class="page-item ${pagination.has_next ? '' : 'disabled'}">
                 <a class="page-link" href="#" data-page="${pagination.current_page + 1}" aria-label="Next">
@@ -305,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         paginationContainer.innerHTML = html;
         
-        // Add event listeners to pagination links
+        
         document.querySelectorAll('.pagination .page-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -329,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
     
-    // Clean up modal resources when closed
+    
     videoModal.addEventListener('hidden.bs.modal', function () {
         videoIframe.src = '';
     });

@@ -1,4 +1,3 @@
-# app/tasks/fetcher.py
 import threading
 import time
 from datetime import datetime, timedelta
@@ -30,7 +29,6 @@ class VideoFetcher:
     def _fetch_loop(self):
         while self.is_running:
             try:
-                # Create an application context for this thread
                 with app.app_context():
                     # Find the latest video timestamp or default to 1 day ago
                     latest_video = Video.query.order_by(Video.published_at.desc()).first()
