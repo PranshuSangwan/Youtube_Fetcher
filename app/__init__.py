@@ -25,6 +25,7 @@ app.register_blueprint(api_bp, url_prefix='/api')
 
 # Initialize background task
 from app.tasks.fetcher import VideoFetcher
+from app.routes import dashboard
 
 @app.before_request
 def start_background_task():

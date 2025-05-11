@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}YouTube Video Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="filters">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="search-bar">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="search-input" placeholder="Search videos...">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="sort-select" class="form-label">Sort by</label>
+                        <select class="form-select" id="sort-select">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="title_asc">Title (A-Z)</option>
+                            <option value="title_desc">Title (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="per-page-select" class="form-label">Results per page</label>
+                        <select class="form-select" id="per-page-select">
+                            <option value="12">12</option>
+                            <option value="24">24</option>
+                            <option value="48">48</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="video-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+    <!-- Videos will be loaded here -->
+    <div class="col-12 loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading videos...</p>
+    </div>
+</div>
+
+<nav aria-label="Video pagination">
+    <ul class="pagination" id="pagination">
+        <!-- Pagination will be generated here -->
+    </ul>
+</nav>
+
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ratio ratio-16x9 mb-3">
+                    <iframe id="videoIframe" src="" allowfullscreen></iframe>
+                </div>
+                <p id="videoDescription" class="mt-3"></p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted" id="videoChannel"></small>
+                    <small class="text-muted" id="videoDate"></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a id="videoYouTubeLink" href="#" target="_blank" class="btn btn-danger">
+                    <i class="bi bi-youtube"></i> Watch on YouTube
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentPage = 1;
+    let perPage = 12;
+    let sortBy = 'newest';
+    let searchQuery = '';
+    
+    // Get elements
+    const videoContainer = document.getElementById('video-container');
+    const paginationContainer = document.getElementById('pagination');
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const perPageSelect = document.getElementById('per-page-select');
+    
+    // Modal elements
+    const videoModal = document.getElementById('videoModal');
+    const videoModalTitle = document.getElementById('videoModalTitle');
+    const videoIframe = document.getElementById('videoIframe');
+    const videoDescription = document.getElementById('videoDescription');
+    const videoChannel = document.getElementById('videoChannel');
+    const videoDate = document.getElementById('videoDate');
+    const videoYouTubeLink = document.getElementById('videoYouTubeLink');
+    
+    // Initial load
+    loadVideos();
+    
+    // Event listeners
+    searchInput.addEventListener('input', debounce(function() {
+        searchQuery = this.value;
+        currentPage = 1;
+        loadVideos();
+    }, 500));
+    
+    sortSelect.addEventListener('change', function() {
+        sortBy = this.value;
+        currentPage = 1;
+        loadVideos();
+    });
+    
+    perPageSelect.addEventListener('change', function() {
+        perPage = parseInt(this.value);
+        currentPage = 1;
+        loadVideos();
+    });
+    
+    // Functions
+    function loadVideos() {
+        showLoading();
+        
+        // Build the API URL with query parameters
+        let apiUrl = `/api/videos?page=${currentPage}&per_page=${perPage}`;
+        
+        // Add sort parameter based on selection
+        switch(sortBy) {
+            case 'newest':
+                apiUrl += '&sort=published_at&order=desc';
+                break;
+            case 'oldest':
+                apiUrl += '&sort=published_at&order=asc';
+                break;
+            case 'title_asc':
+                apiUrl += '&sort=title&order=asc';
+                break;
+            case 'title_desc':
+                apiUrl += '&sort=title&order=desc';
+                break;
+        }
+        
+        // Add search parameter if there's a query
+        if (searchQuery) {
+            apiUrl += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                displayVideos(data.videos);
+                setupPagination(data.pagination);
+            })
+            .catch(error => {
+                console.error('Error fetching videos:', error);
+                videoContainer.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-danger">
+                            Error loading videos. Please try again later.
+                        </div>
+                    </div>
+                `;
+            });
+    }
+    
+    function displayVideos(videos) {
+        if (videos.length === 0) {
+            videoContainer.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="alert alert-info">
+                        No videos found matching your criteria.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        videos.forEach(video => {
+            const publishedDate = new Date(video.published_at).toLocaleDateString();
+            html += `
+                <div class="col">
+                    <div class="card video-card h-100" data-video-id="${video.id}">
+                        <div class="thumbnail-container">
+                            <img src="${video.thumbnails.high || video.thumbnails.medium || video.thumbnails.default}" 
+                                 class="card-img-top" alt="${video.title}">
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-dark">${publishedDate}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">${video.title}</h5>
+                            <p class="channel-title">${video.channel_title}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <button class="btn btn-sm btn-outline-primary view-details" 
+                                    data-video-id="${video.id}"
+                                    data-video-title="${video.title}"
+                                    data-video-desc="${video.description}"
+                                    data-video-channel="${video.channel_title}"
+                                    data-video-date="${publishedDate}">
+                                View Details
+                            </button>
+                            <a href="https://www.youtube.com/watch?v=${video.id}" 
+                               class="btn btn-sm btn-danger float-end" 
+                               target="_blank">
+                                <i class="bi bi-youtube"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        videoContainer.innerHTML = html;
+        
+        // Add event listeners to view detail buttons
+        document.querySelectorAll('.view-details').forEach(button => {
+            button.addEventListener('click', function() {
+                const videoId = this.getAttribute('data-video-id');
+                const videoTitle = this.getAttribute('data-video-title');
+                const videoDesc = this.getAttribute('data-video-desc') || 'No description available.';
+                const videoChannelName = this.getAttribute('data-video-channel');
+                const videoPublishedDate = this.getAttribute('data-video-date');
+                
+                // Set modal content
+                videoModalTitle.textContent = videoTitle;
+                videoIframe.src = `https://www.youtube.com/embed/${videoId}`;
+                videoDescription.textContent = videoDesc;
+                videoChannel.textContent = `Channel: ${videoChannelName}`;
+                videoDate.textContent = `Published: ${videoPublishedDate}`;
+                videoYouTubeLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+                
+                // Show modal
+                const modal = new bootstrap.Modal(videoModal);
+                modal.show();
+            });
+        });
+    }
+    
+    function setupPagination(pagination) {
+        if (!pagination || pagination.pages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        let html = '';
+        // Previous button
+        html += `
+            <li class="page-item ${pagination.has_prev ? '' : 'disabled'}">
+                <a class="page-link" href="#" data-page="${pagination.current_page - 1}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `;
+        
+        // Page numbers
+        const startPage = Math.max(1, pagination.current_page - 2);
+        const endPage = Math.min(pagination.pages, pagination.current_page + 2);
+        
+        if (startPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+            if (startPage > 2) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+        }
+        
+        if (endPage < pagination.pages) {
+            if (endPage < pagination.pages - 1) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${pagination.pages}">${pagination.pages}</a></li>`;
+        }
+        
+        // Next button
+        html += `
+            <li class="page-item ${pagination.has_next ? '' : 'disabled'}">
+                <a class="page-link" href="#" data-page="${pagination.current_page + 1}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        `;
+        
+        paginationContainer.innerHTML = html;
+        
+        // Add event listeners to pagination links
+        document.querySelectorAll('.pagination .page-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!this.parentElement.classList.contains('disabled') && !this.parentElement.classList.contains('active')) {
+                    currentPage = parseInt(this.getAttribute('data-page'));
+                    loadVideos();
+                    window.scrollTo(0, 0);
+                }
+            });
+        });
+    }
+    
+    function showLoading() {
+        videoContainer.innerHTML = `
+            <div class="col-12 loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading videos...</p>
+            </div>
+        `;
+    }
+    
+    // Clean up modal resources when closed
+    videoModal.addEventListener('hidden.bs.modal', function () {
+        videoIframe.src = '';
+    });
+    
+    // Debounce function to prevent excessive API calls during typing
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // Auto-refresh videos every 30 seconds
+    setInterval(() => {
+        loadVideos();
+    }, 30000);
+});
+</script>
+{% endblock %}
