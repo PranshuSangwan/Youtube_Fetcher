@@ -31,7 +31,7 @@ A Flask-based backend service that continuously fetches the latest videos from Y
 ### 1. Clone the Repository
 
 ```bash
-git clone <https://github.com/PranshuSangwan/Youtube_Fetcher.git>
+git clone https://github.com/PranshuSangwan/Youtube_Fetcher.git
 cd youtube-video-fetcher
 ```
 
@@ -41,7 +41,8 @@ cd youtube-video-fetcher
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  
+Windows: venv\Scripts\activate
 ```
 
 ---
@@ -191,7 +192,3 @@ http://localhost:5000/
 - Optimized DB queries with indexes on `published_at`.  
 
 ---
-
-## 🤝 License
-
-MIT — feel free to fork, extend, or build on top of this.
